@@ -17,7 +17,16 @@ type Route struct {
 }
 
 func New(path string) *Route {
-	tidyString := path
+	splitParams := strings.SplitN(path, "?", 1)
+	params := ""
+
+	if len(splitParams) > 1 {
+		params = splitParams[1]
+	}
+
+	fmt.Println(params)
+
+	tidyString := splitParams[0]
 
 	if tidyString[0] == 47 {
 		tidyString = tidyString[1:]
