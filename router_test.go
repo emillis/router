@@ -16,6 +16,10 @@ type Route struct {
 	partitionedPath []string
 }
 
+func (r *Route) Compare(s []string) {
+
+}
+
 func New(path string) *Route {
 	splitParams := strings.SplitN(path, "?", 1)
 	params := ""
