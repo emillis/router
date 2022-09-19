@@ -12,6 +12,10 @@ var stringSeparator = "/"
 var bytesToSplit = []byte("/one/two/three/four")
 var bytesSeparator = []byte("/")
 
+type Segment struct {
+	value string
+}
+
 type Route struct {
 	partitionedPath []string
 }
@@ -66,5 +70,17 @@ func BenchmarkEntry_SplitStrings(b *testing.B) {
 func BenchmarkEntry_SplitBytes(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		bytes.Split(bytesToSplit, bytesSeparator)
+	}
+}
+
+func BenchmarkReadMap(b *testing.B) {
+	s := []Segment{{"1"}, {"2"}, {"3"}}
+
+	for n := 0; n < b.N; n++ {
+		for _, v := range s {
+			if v.value == "-999" {
+
+			}
+		}
 	}
 }
