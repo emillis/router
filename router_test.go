@@ -13,40 +13,50 @@ var bytesToSplit = []byte("/one/two/three/four")
 var bytesSeparator = []byte("/")
 
 type Segment struct {
-	value string
+	value      string
+	isVariable bool
 }
 
 type Route struct {
+	original        string
 	partitionedPath []string
+	segments        []Segment
+	hasVariables    bool
 }
 
-func (r *Route) Compare(s []string) {
+func (r *Route) AddSegment(s Segment) {
 
 }
 
-func New(path string) *Route {
-	splitParams := strings.SplitN(path, "?", 1)
-	params := ""
+func ParseSegment(segment string) Segment {
+	//TODO fix segment being "". It would cause problems below getting the index 0 of the string
 
-	if len(splitParams) > 1 {
-		params = splitParams[1]
+	s := Segment{
+		value:      segment,
+		isVariable: segment[0] == 58,
 	}
 
-	fmt.Println(params)
+	return s
+}
 
-	tidyString := splitParams[0]
-
-	if tidyString[0] == 47 {
-		tidyString = tidyString[1:]
+func ParseRoute(route string) Route {
+	r := Route{
+		original: route,
 	}
 
-	if tidyString[len(tidyString)-1] == 47 {
-		tidyString = tidyString[:len(tidyString)-1]
+	//Stripping the first "/" if exist
+	if route[0] == 47 {
+		route = route[1:]
 	}
 
-	return &Route{
-		partitionedPath: strings.Split(tidyString, "/"),
+	//Stripping the last "/" if exist
+	if route[len(route)-1] == 47 {
+		route = route[:len(route)-1]
 	}
+
+	r.partitionedPath = strings.Split(route, "/")
+
+	return r
 }
 
 func BenchmarkEntry_SplitStrings(b *testing.B) {
@@ -74,7 +84,7 @@ func BenchmarkEntry_SplitBytes(b *testing.B) {
 }
 
 func BenchmarkReadMap(b *testing.B) {
-	s := []Segment{{"1"}, {"2"}, {"3"}}
+	s := []Segment{{"1", false}, {"2", false}, {"3", false}}
 
 	for n := 0; n < b.N; n++ {
 		for _, v := range s {
