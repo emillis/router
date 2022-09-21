@@ -18,14 +18,13 @@ type Segment struct {
 }
 
 type Route struct {
-	original        string
-	partitionedPath []string
-	segments        []Segment
-	hasVariables    bool
+	original     string
+	segments     []Segment
+	hasVariables bool
 }
 
 func (r *Route) AddSegment(s Segment) {
-
+	r.segments = append(r.segments, s)
 }
 
 func ParseSegment(segment string) Segment {
@@ -54,7 +53,11 @@ func ParseRoute(route string) Route {
 		route = route[:len(route)-1]
 	}
 
-	r.partitionedPath = strings.Split(route, "/")
+	partitionedPath := strings.Split(route, "/")
+
+	for _, s := range partitionedPath {
+		r.AddSegment(ParseSegment(s))
+	}
 
 	return r
 }
@@ -84,10 +87,10 @@ func BenchmarkEntry_SplitBytes(b *testing.B) {
 }
 
 func BenchmarkReadMap(b *testing.B) {
-	s := []Segment{{"1", false}, {"2", false}, {"3", false}}
+	route := ParseRoute("/one")
 
 	for n := 0; n < b.N; n++ {
-		for _, v := range s {
+		for _, v := range route.segments {
 			if v.value == "-999" {
 
 			}
