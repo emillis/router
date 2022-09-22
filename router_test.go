@@ -27,22 +27,7 @@ func (r *Route) AddSegment(s Segment) {
 	r.segments = append(r.segments, s)
 }
 
-func ParseSegment(segment string) Segment {
-	//TODO fix segment being "". It would cause problems below getting the index 0 of the string
-
-	s := Segment{
-		value:      segment,
-		isVariable: segment[0] == 58,
-	}
-
-	return s
-}
-
-func ParseRoute(route string) Route {
-	r := Route{
-		original: route,
-	}
-
+func ParsePath(route string) []string {
 	//Stripping the first "/" if exist
 	if route[0] == 47 {
 		route = route[1:]
@@ -53,13 +38,39 @@ func ParseRoute(route string) Route {
 		route = route[:len(route)-1]
 	}
 
-	partitionedPath := strings.Split(route, "/")
+	return strings.Split(route, "/")
+}
 
-	for _, s := range partitionedPath {
-		r.AddSegment(ParseSegment(s))
+func CreateSegments(s []string) []Segment {
+	var results []Segment
+
+	for _, x := range s {
+		results = append(results, NewSegment(x))
+	}
+
+	return results
+}
+
+func NewRoute(s string) Route {
+
+	r := Route{
+		original:     s,
+		segments:     CreateSegments(ParsePath(s)),
+		hasVariables: false,
 	}
 
 	return r
+}
+
+func NewSegment(segment string) Segment {
+	//TODO fix segment being "". It would cause problems below getting the index 0 of the string
+
+	s := Segment{
+		value:      segment,
+		isVariable: segment[0] == 58,
+	}
+
+	return s
 }
 
 func BenchmarkEntry_SplitStrings(b *testing.B) {
@@ -87,7 +98,7 @@ func BenchmarkEntry_SplitBytes(b *testing.B) {
 }
 
 func BenchmarkReadMap(b *testing.B) {
-	route := ParseRoute("/one")
+	route := NewRoute("/one")
 
 	for n := 0; n < b.N; n++ {
 		for _, v := range route.segments {
