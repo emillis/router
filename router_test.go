@@ -24,7 +24,19 @@ type Route struct {
 }
 
 func (r *Route) AddSegment(s Segment) {
+	if s.isVariable {
+		r.hasVariables = true
+	}
+
 	r.segments = append(r.segments, s)
+}
+
+func (r *Route) Compare(s []string) {
+	//if s.isVariable {
+	//	r.hasVariables = true
+	//}
+	//
+	//r.segments = append(r.segments, s)
 }
 
 func ParsePath(route string) []string {
@@ -55,8 +67,12 @@ func NewRoute(s string) Route {
 
 	r := Route{
 		original:     s,
-		segments:     CreateSegments(ParsePath(s)),
+		segments:     []Segment{},
 		hasVariables: false,
+	}
+
+	for _, segment := range CreateSegments(ParsePath(s)) {
+		r.AddSegment(segment)
 	}
 
 	return r
@@ -103,6 +119,18 @@ func BenchmarkReadMap(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		for _, v := range route.segments {
 			if v.value == "-999" {
+
+			}
+		}
+	}
+}
+
+func BenchmarkSplitType1(b *testing.B) {
+	path := "one/two/three/four"
+
+	for n := 0; n < b.N; n++ {
+		for i, _ := range path {
+			if i == -999 {
 
 			}
 		}
