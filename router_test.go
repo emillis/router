@@ -126,13 +126,22 @@ func BenchmarkReadMap(b *testing.B) {
 }
 
 func BenchmarkSplitType1(b *testing.B) {
-	path := "one/two/three/four"
+	path := "/one/two/three/four"
 
 	for n := 0; n < b.N; n++ {
-		for i, _ := range path {
-			if i == -999 {
+		var split [4]string
+		startPos := 0
+		j := 0
 
+		for i, symbol := range path {
+			if symbol != 47 {
+				continue
 			}
+
+			split[j] = path[startPos:i]
+
+			startPos = i + 1
+			j++
 		}
 	}
 }
