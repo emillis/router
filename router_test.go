@@ -1,147 +1,122 @@
 package router
 
 import (
-	"bytes"
 	"fmt"
-	"strings"
 	"testing"
 )
 
-var stringToSplit = "/one/two/three/four/"
-var stringSeparator = "/"
-var bytesToSplit = []byte("/one/two/three/four")
-var bytesSeparator = []byte("/")
-
-type Segment struct {
-	value      string
-	isVariable bool
-}
-
-type Route struct {
-	original     string
-	segments     []Segment
-	hasVariables bool
-}
-
-func (r *Route) AddSegment(s Segment) {
-	if s.isVariable {
-		r.hasVariables = true
-	}
-
-	r.segments = append(r.segments, s)
-}
-
-func (r *Route) Compare(s []string) {
-	//if s.isVariable {
-	//	r.hasVariables = true
-	//}
-	//
-	//r.segments = append(r.segments, s)
-}
-
-func ParsePath(route string) []string {
-	//Stripping the first "/" if exist
-	if route[0] == 47 {
-		route = route[1:]
-	}
-
-	//Stripping the last "/" if exist
-	if route[len(route)-1] == 47 {
-		route = route[:len(route)-1]
-	}
-
-	return strings.Split(route, "/")
-}
-
-func CreateSegments(s []string) []Segment {
-	var results []Segment
-
-	for _, x := range s {
-		results = append(results, NewSegment(x))
-	}
-
-	return results
-}
-
-func NewRoute(s string) Route {
-
-	r := Route{
-		original:     s,
-		segments:     []Segment{},
-		hasVariables: false,
-	}
-
-	for _, segment := range CreateSegments(ParsePath(s)) {
-		r.AddSegment(segment)
-	}
-
-	return r
-}
-
-func NewSegment(segment string) Segment {
-	//TODO fix segment being "". It would cause problems below getting the index 0 of the string
-
-	s := Segment{
-		value:      segment,
-		isVariable: segment[0] == 58,
-	}
-
-	return s
-}
-
-func BenchmarkEntry_SplitStrings(b *testing.B) {
-	tidyString := stringToSplit
-
-	if tidyString[0] == 47 {
-		tidyString = tidyString[1:]
-	}
-
-	if tidyString[len(tidyString)-1] == 47 {
-		tidyString = tidyString[:len(tidyString)-1]
-	}
-
-	fmt.Println(tidyString)
+func BenchmarkSplitPath(b *testing.B) {
+	path := "/one/:two/three/four"
 
 	for n := 0; n < b.N; n++ {
-		strings.Split(tidyString, stringSeparator)
+		SplitPath(path)
 	}
 }
 
-func BenchmarkEntry_SplitBytes(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		bytes.Split(bytesToSplit, bytesSeparator)
-	}
-}
-
-func BenchmarkReadMap(b *testing.B) {
-	route := NewRoute("/one")
+func BenchmarkNewRoute(b *testing.B) {
+	path := "/one/two/three/four/"
 
 	for n := 0; n < b.N; n++ {
-		for _, v := range route.segments {
-			if v.value == "-999" {
-
-			}
-		}
+		NewRoute(path)
 	}
 }
 
+//The best so far
 func BenchmarkSplitType1(b *testing.B) {
-	path := "/one/two/three/four"
+	path := "/one/:two/three/four/"
+
+	//x := Router{}
+	//
+	//log.Fatal(http.ListenAndServe(":80", x))
+
+	var segments [4]Segment
 
 	for n := 0; n < b.N; n++ {
-		var split [4]string
-		startPos := 0
+		//startPos := 0
 		j := 0
 
-		for i, symbol := range path {
-			if symbol != 47 {
+		for i := 1; i < len(path); i++ {
+			if path[i] != 47 {
 				continue
 			}
 
-			split[j] = path[startPos:i]
+			segments[j] = Segment{
+				value:      path[:i],
+				isVariable: path[:i][1] == 58,
+				ok:         true,
+			}
+			//segments[j] = NewSegment(path[:i])
+			path = path[i:]
+			i = 0
 
-			startPos = i + 1
 			j++
 		}
+
+	}
+
+	fmt.Println(segments)
+}
+
+//Same as type 1, but in reverse
+func BenchmarkSplitType2(b *testing.B) {
+	path, _ := processPath("/one/:two/three/four")
+
+	for n := 0; n < b.N; n++ {
+		const bufferSize = 10
+		var segments [bufferSize]Segment
+
+		j := 0
+
+		for i := len(path) - 1; i >= 0; i-- {
+			if path[i] != 47 {
+				continue
+			}
+
+			segments[j] = NewSegment(path[i:])
+			path = path[:i]
+			i = len(path)
+
+			j++
+		}
+
+	}
+
+	//fmt.Println(segments)
+}
+
+func BenchmarkProcessPath(b *testing.B) {
+	path := "/one/two/three/four/"
+
+	//processedString, err := processPath(path)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Println(processedString)
+
+	for n := 0; n < b.N; n++ {
+
+		processPath(path)
+
+	}
+}
+
+func BenchmarkRouter_findRoute(b *testing.B) {
+	router := Router{}
+	routesToAdd := []string{
+		"/one/:two/three",
+		"/one/:two/three/four/",
+		"/one/:two/three/five/",
+	}
+	for _, r := range routesToAdd {
+		err := router.addRoute(r)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	//fmt.Println(router.findRoute("/one/:two/three/"))
+
+	for n := 0; n < b.N; n++ {
+		router.findRoute("/one/:two/three/")
 	}
 }
