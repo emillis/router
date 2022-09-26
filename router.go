@@ -19,8 +19,29 @@ type Route struct {
 }
 
 func (r *Route) Compare(path string) bool {
+	j := 0
+	for i := len(path) - 1; i >= 0; i-- {
+		if path[i] != 47 {
+			continue
+		}
 
-	return false
+		if !r.segments[j].isVariable && r.segments[j].value != path[i:] {
+			fmt.Println(1)
+			return false
+		}
+
+		path = path[:i]
+		j++
+		if j >= len(r.segments) {
+			fmt.Println(2)
+			return false
+		}
+	}
+	if j != len(r.segments) {
+		fmt.Println(3)
+		return false
+	}
+	return true
 }
 
 type Router struct {
@@ -31,7 +52,11 @@ func (r *Router) findRoute(s string) *Route {
 	s, _ = processPath(s)
 
 	for i := 0; i < len(r.routes); i++ {
-		r.routes[i].Compare(s)
+		if !r.routes[i].Compare(s) {
+			continue
+		}
+
+		return r.routes[i]
 	}
 
 	return nil

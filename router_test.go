@@ -104,8 +104,8 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 	router := Router{}
 	routesToAdd := []string{
 		"/one/:two/three",
-		"/one/:two/three/four/",
-		"/one/:two/three/five/",
+		"/one/two/three/four/",
+		"/one/two/three/four/five/",
 	}
 	for _, r := range routesToAdd {
 		err := router.addRoute(r)
@@ -114,9 +114,7 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 		}
 	}
 
-	//fmt.Println(router.findRoute("/one/:two/three/"))
-
-	for n := 0; n < b.N; n++ {
-		router.findRoute("/one/:two/three/")
-	}
+	//for n := 0; n < b.N; n++ {
+	fmt.Println(router.findRoute("/one/twop/three/"))
+	//}
 }
