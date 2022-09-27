@@ -115,6 +115,6 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 	}
 
 	//for n := 0; n < b.N; n++ {
-	fmt.Println(router.findRoute("/one/twop/three/"))
+	fmt.Println(router.findRoute("/one/two/three/four"))
 	//}
 }

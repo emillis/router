@@ -19,27 +19,29 @@ type Route struct {
 }
 
 func (r *Route) Compare(path string) bool {
-	j := 0
+	segmentCount := 0
 	for i := len(path) - 1; i >= 0; i-- {
+		//If the character is not "/", continue to the next character
 		if path[i] != 47 {
 			continue
 		}
 
-		if !r.segments[j].isVariable && r.segments[j].value != path[i:] {
-			fmt.Println(1)
+		//If segment count in the supplied path is more than the number of segments in the
+		//path that its being compared to, return false
+		if segmentCount == len(r.segments) {
+			return false
+		}
+
+		//
+		if !r.segments[segmentCount].isVariable && r.segments[segmentCount].value != path[i:] {
 			return false
 		}
 
 		path = path[:i]
-		j++
-		if j >= len(r.segments) {
-			fmt.Println(2)
+		if segmentCount >= len(r.segments) {
 			return false
 		}
-	}
-	if j != len(r.segments) {
-		fmt.Println(3)
-		return false
+		segmentCount++
 	}
 	return true
 }
