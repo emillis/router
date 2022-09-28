@@ -5,6 +5,8 @@ import (
 	"testing"
 )
 
+var xxx int
+
 func BenchmarkSplitPath(b *testing.B) {
 	path := "/one/:two/three/four"
 
@@ -51,7 +53,7 @@ func BenchmarkSplitType1(b *testing.B) {
 
 			j++
 		}
-
+		path = "/one/:two/three/four/"
 	}
 
 	fmt.Println(segments)
@@ -59,10 +61,9 @@ func BenchmarkSplitType1(b *testing.B) {
 
 //Same as type 1, but in reverse
 func BenchmarkSplitType2(b *testing.B) {
-	path, _ := processPath("/one/:two/three/four")
 
 	for n := 0; n < b.N; n++ {
-		const bufferSize = 10
+		path := "/one/:two/three/four"
 		var segments [bufferSize]Segment
 
 		j := 0
@@ -78,7 +79,6 @@ func BenchmarkSplitType2(b *testing.B) {
 
 			j++
 		}
-
 	}
 
 	//fmt.Println(segments)
@@ -86,12 +86,6 @@ func BenchmarkSplitType2(b *testing.B) {
 
 func BenchmarkProcessPath(b *testing.B) {
 	path := "/one/two/three/four/"
-
-	//processedString, err := processPath(path)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Println(processedString)
 
 	for n := 0; n < b.N; n++ {
 
@@ -114,7 +108,16 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 		}
 	}
 
-	//for n := 0; n < b.N; n++ {
-	fmt.Println(router.findRoute("/one/two/three/four"))
-	//}
+	path := "/one/two/three/four"
+
+	if xxx == 0 {
+		fmt.Println("===============================")
+		fmt.Println(router.findRoute(path))
+		fmt.Println("===============================")
+		xxx++
+	}
+
+	for n := 0; n < b.N; n++ {
+		router.findRoute(path)
+	}
 }

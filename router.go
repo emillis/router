@@ -1,10 +1,20 @@
 package router
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 )
+
+//===========[CACHE/STATIC]====================================================================================================
+
+const bufferSize = 50
+
+//===========[STRUCTS]====================================================================================================
+
+type PathDetails struct {
+	count    int
+	segments [bufferSize]string
+}
 
 type Segment struct {
 	value      string
@@ -18,31 +28,17 @@ type Route struct {
 	hasVariables bool
 }
 
-func (r *Route) Compare(path string) bool {
-	segmentCount := 0
-	for i := len(path) - 1; i >= 0; i-- {
-		//If the character is not "/", continue to the next character
-		if path[i] != 47 {
-			continue
-		}
-
-		//If segment count in the supplied path is more than the number of segments in the
-		//path that its being compared to, return false
-		if segmentCount == len(r.segments) {
-			return false
-		}
-
-		//
-		if !r.segments[segmentCount].isVariable && r.segments[segmentCount].value != path[i:] {
-			return false
-		}
-
-		path = path[:i]
-		if segmentCount >= len(r.segments) {
-			return false
-		}
-		segmentCount++
+func (r *Route) Compare(pd *PathDetails) bool {
+	if pd.count != len(r.segments) {
+		return false
 	}
+
+	for i := 0; i < pd.count; i++ {
+		if pd.segments[i] != r.segments[i].value {
+			return false
+		}
+	}
+
 	return true
 }
 
@@ -51,10 +47,27 @@ type Router struct {
 }
 
 func (r *Router) findRoute(s string) *Route {
-	s, _ = processPath(s)
+	s = processPath(s)
+	pd := &PathDetails{
+		count:    0,
+		segments: [50]string{},
+	}
+
+	//Splitting the supplied path into its segments
+	for i := len(s) - 1; i >= 0; i-- {
+		//If the character is not "/", continue to the next character
+		if s[i] != 47 {
+			continue
+		}
+
+		pd.segments[pd.count] = s[i:]
+
+		s = s[:i]
+		pd.count++
+	}
 
 	for i := 0; i < len(r.routes); i++ {
-		if !r.routes[i].Compare(s) {
+		if !r.routes[i].Compare(pd) {
 			continue
 		}
 
@@ -117,27 +130,24 @@ func SplitPath(path string) []Segment {
 }
 
 //processPath check for critical errors within the path supplied. Also, removes trailing "/" sign if present
-func processPath(s string) (string, error) {
-	if s == "" {
-		return s, errors.New("path supplied cannot be an empty string")
-	}
+func processPath(s string) string {
+	//if s == "" {
+	//	return s, errors.New("path supplied cannot be an empty string")
+	//}
 
-	if s[0] != 47 {
-		return s, errors.New("path must begin with \"/\"")
-	}
+	//if s[0] != 47 {
+	//	return s, errors.New("path must begin with \"/\"")
+	//}
 
 	if s[len(s)-1] == 47 && len(s) > 1 {
-		s = s[:len(s)-1]
+		return s[:len(s)-1]
 	}
 
-	return s, nil
+	return s
 }
 
 func NewRoute(s string) (*Route, error) {
-	s, err := processPath(s)
-	if err != nil {
-		return nil, err
-	}
+	s = processPath(s)
 
 	r := Route{
 		original: s,
