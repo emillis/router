@@ -94,8 +94,24 @@ func BenchmarkProcessPath(b *testing.B) {
 	}
 }
 
+func BenchmarkReadingFromMap(b *testing.B) {
+	var aaa = map[string]bool{
+		"/one/two/three/four/":      true,
+		"/one/:two/three":           true,
+		"/one/two/three/four/five/": true,
+	}
+
+	for n := 0; n < b.N; n++ {
+
+		if result, _ := aaa["/one/two/three/four/"]; result {
+
+		}
+
+	}
+}
+
 func BenchmarkRouter_findRoute(b *testing.B) {
-	router := Router{}
+	router := NewRouter()
 	routesToAdd := []string{
 		"/one/:two/three",
 		"/one/two/three/four/",

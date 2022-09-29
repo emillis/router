@@ -34,7 +34,7 @@ func (r *Route) Compare(pd *PathDetails) bool {
 	}
 
 	for i := 0; i < pd.count; i++ {
-		if pd.segments[i] != r.segments[i].value {
+		if pd.segments[i] != r.segments[i].value && !r.segments[i].isVariable {
 			return false
 		}
 	}
@@ -43,11 +43,17 @@ func (r *Route) Compare(pd *PathDetails) bool {
 }
 
 type Router struct {
-	routes []*Route
+	staticRoutes   map[string]*Route
+	variableRoutes []*Route
 }
 
 func (r *Router) findRoute(s string) *Route {
 	s = processPath(s)
+
+	if router, exist := r.staticRoutes[s]; exist {
+		return router
+	}
+
 	pd := &PathDetails{
 		count:    0,
 		segments: [50]string{},
@@ -66,12 +72,12 @@ func (r *Router) findRoute(s string) *Route {
 		pd.count++
 	}
 
-	for i := 0; i < len(r.routes); i++ {
-		if !r.routes[i].Compare(pd) {
+	for i := 0; i < len(r.variableRoutes); i++ {
+		if !r.variableRoutes[i].Compare(pd) {
 			continue
 		}
 
-		return r.routes[i]
+		return r.variableRoutes[i]
 	}
 
 	return nil
@@ -83,7 +89,12 @@ func (r *Router) addRoute(s string) error {
 		return err
 	}
 
-	r.routes = append(r.routes, route)
+	if !route.hasVariables {
+		r.staticRoutes[route.original] = route
+		return nil
+	}
+
+	r.variableRoutes = append(r.variableRoutes, route)
 
 	return nil
 }
@@ -168,6 +179,7 @@ func NewRoute(s string) (*Route, error) {
 
 func NewRouter() *Router {
 	return &Router{
-		routes: []*Route{},
+		staticRoutes:   map[string]*Route{},
+		variableRoutes: []*Route{},
 	}
 }
