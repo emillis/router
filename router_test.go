@@ -27,7 +27,7 @@ func BenchmarkNewRoute(b *testing.B) {
 func BenchmarkSplitType1(b *testing.B) {
 	path := "/one/:two/three/four/"
 
-	//x := Router{}
+	//x := HttpRouter{}
 	//
 	//log.Fatal(http.ListenAndServe(":80", x))
 

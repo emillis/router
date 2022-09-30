@@ -9,7 +9,13 @@ import (
 
 const bufferSize = 50
 
+var GET Method = "GET"
+var POST Method = "POST"
+
 //===========[STRUCTS]====================================================================================================
+
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+type Method string
 
 type PathDetails struct {
 	count    int
@@ -42,12 +48,16 @@ func (r *Route) Compare(pd *PathDetails) bool {
 	return true
 }
 
-type Router struct {
+type HttpRouter struct {
 	staticRoutes   map[string]*Route
 	variableRoutes []*Route
 }
 
-func (r *Router) findRoute(s string) *Route {
+func (r *HttpRouter) HandleFunc(pattern string, handler HandlerFunc) {
+
+}
+
+func (r *HttpRouter) findRoute(s string) *Route {
 	s = processPath(s)
 
 	if router, exist := r.staticRoutes[s]; exist {
@@ -83,7 +93,7 @@ func (r *Router) findRoute(s string) *Route {
 	return nil
 }
 
-func (r *Router) addRoute(s string) error {
+func (r *HttpRouter) addRoute(s string) error {
 	route, err := NewRoute(s)
 	if err != nil {
 		return err
@@ -99,7 +109,7 @@ func (r *Router) addRoute(s string) error {
 	return nil
 }
 
-func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("asda"))
 	fmt.Println(req.URL)
 	fmt.Println(req.URL.Path)
@@ -177,8 +187,8 @@ func NewRoute(s string) (*Route, error) {
 	return &r, nil
 }
 
-func NewRouter() *Router {
-	return &Router{
+func NewRouter() *HttpRouter {
+	return &HttpRouter{
 		staticRoutes:   map[string]*Route{},
 		variableRoutes: []*Route{},
 	}
