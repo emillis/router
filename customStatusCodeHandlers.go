@@ -18,10 +18,10 @@ type httpStatusCodeHandlers struct {
 func newCustomHttpCodeHandlers() httpStatusCodeHandlers {
 	return httpStatusCodeHandlers{
 		handlers: map[int]HandlerFunc{
-			http.StatusNotFound: func(w http.ResponseWriter, r *http.Request) {
+			http.StatusNotFound: func(w http.ResponseWriter, r *http.Request, ai *AdditionalInfo) {
 				w.WriteHeader(404)
 			},
-			http.StatusMethodNotAllowed: func(w http.ResponseWriter, r *http.Request) {
+			http.StatusMethodNotAllowed: func(w http.ResponseWriter, r *http.Request, ai *AdditionalInfo) {
 				w.WriteHeader(405)
 			},
 		},

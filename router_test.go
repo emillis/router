@@ -2,10 +2,32 @@ package veryFastRouter
 
 import (
 	"fmt"
+	"net/http"
+	"net/url"
 	"testing"
 )
 
 var xxx int
+
+func BenchmarkHttpRouter_ServeHTTP(b *testing.B) {
+	router := NewRouter()
+
+	router.HandleFunc("/test", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+	router.HandleFunc("/test/two", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+	router.HandleFunc("/test/:two/three", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+	router.HandleFunc("/test/two/three/four", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+
+	mockRequest := http.Request{
+		Method: "GET",
+		URL:    &url.URL{Path: "/test/two"},
+	}
+
+	b.ReportAllocs()
+
+	for n := 0; n < b.N; n++ {
+		router.ServeHTTP(nil, &mockRequest)
+	}
+}
 
 func BenchmarkSplitPath(b *testing.B) {
 	path := "/one/:two/three/four"
@@ -23,7 +45,6 @@ func BenchmarkNewRoute(b *testing.B) {
 	}
 }
 
-//The best so far
 func BenchmarkSplitType1(b *testing.B) {
 	path := "/one/:two/three/four/"
 
@@ -43,11 +64,10 @@ func BenchmarkSplitType1(b *testing.B) {
 			}
 
 			segments[j] = segment{
-				value:      path[:i],
+				original:   path[:i],
 				isVariable: path[:i][1] == 58,
-				ok:         true,
 			}
-			//segments[j] = newSegment(path[:i])
+			//values[j] = newSegment(path[:i])
 			path = path[i:]
 			i = 0
 
@@ -59,7 +79,6 @@ func BenchmarkSplitType1(b *testing.B) {
 	fmt.Println(segments)
 }
 
-//Same as type 1, but in reverse
 func BenchmarkSplitType2(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
@@ -81,7 +100,7 @@ func BenchmarkSplitType2(b *testing.B) {
 		}
 	}
 
-	//fmt.Println(segments)
+	//fmt.Println(values)
 }
 
 func BenchmarkProcessPath(b *testing.B) {
