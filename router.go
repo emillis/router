@@ -1,4 +1,4 @@
-package router
+package veryFastRouter
 
 import (
 	"fmt"
@@ -7,83 +7,120 @@ import (
 
 //===========[CACHE/STATIC]====================================================================================================
 
+//bufferSize is the maximum number of segments that the route can consist of. Increasing this doesn't appear
+//to affect performance of the application, only it's memory footprint.
 const bufferSize = 50
 
-var GET Method = "GET"
-var POST Method = "POST"
+//Method defines http method (GET, POST, PUT, etc...)
+type Method string
+
+//HandlerFunc defines how a request handler should look like
+type HandlerFunc func(http.ResponseWriter, *http.Request)
+
+//Allowed method definitions
+var (
+	GET  Method = "GET"
+	POST Method = "POST"
+)
+
+//AllMethods slice contains all available methods
+var AllMethods = []Method{GET, POST}
 
 //===========[STRUCTS]====================================================================================================
 
-type HandlerFunc func(http.ResponseWriter, *http.Request)
-type Method string
-
-type PathDetails struct {
+type pathDetails struct {
 	count    int
 	segments [bufferSize]string
 }
 
-type Segment struct {
+type segment struct {
 	value      string
 	isVariable bool
 	ok         bool
 }
 
-type Route struct {
-	original     string
-	segments     []Segment
-	hasVariables bool
-}
-
-func (r *Route) Compare(pd *PathDetails) bool {
-	if pd.count != len(r.segments) {
-		return false
-	}
-
-	for i := 0; i < pd.count; i++ {
-		if pd.segments[i] != r.segments[i].value && !r.segments[i].isVariable {
-			return false
-		}
-	}
-
-	return true
-}
-
+//HttpRouter implements Handler interface
 type HttpRouter struct {
-	staticRoutes   map[string]*Route
-	variableRoutes []*Route
+	//staticRoutes store all the routes that do not have variables in them
+	staticRoutes map[string]*route
+
+	//variableRoutes store all the routes that contain variables in them
+	variableRoutes []*route
+
+	//httpStatusCodeHandlers hold all the default/custom handlers to various http status codes
+	httpStatusCodeHandlers httpStatusCodeHandlers
 }
 
-func (r *HttpRouter) HandleFunc(pattern string, handler HandlerFunc) {
+//HttpStatusCodeHandler allows you to set up custom handlers for various http status codes,
+//e.g. 404, 405...
+func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) {
+	//At first, checking whether the status code exist in the httpStatusCodeHandlers,
+	//if not, it means that code is not supported
+	if _, exist := r.httpStatusCodeHandlers.handlers[statusCode]; !exist {
+		panic(fmt.Sprintf("status code \"%d\" is not supported!", statusCode))
+	}
 
+	if handler == nil {
+		panic(fmt.Sprintf("handler is not defined for status code \"%d\"!", statusCode))
+	}
+
+	//Assigning newly supplied handler in the place of the default one. The purpose of the wrapper
+	//is to write http status code by default, in case it's forgotten in the implementation supplied
+	r.httpStatusCodeHandlers.handlers[statusCode] = func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(statusCode)
+		handler(w, r)
+	}
 }
 
-func (r *HttpRouter) findRoute(s string) *Route {
-	s = processPath(s)
+//HandleFunc adds a new http request handler for the pattern defined. You can also define
+//methods to which this handler is going to respond to. If nil is passed as methods, a default
+//or a custom 405 handler will be invoked. For the handler to response to all methods, you
+//should use in AllMethods that's defined in this module
+func (r *HttpRouter) HandleFunc(pattern string, methods []Method, handler HandlerFunc) {
+	route, err := r.addRoute(pattern)
+	if err != nil {
+		panic(err)
+	}
 
-	if router, exist := r.staticRoutes[s]; exist {
+	route.methods = methods
+	if route.methods == nil || len(route.methods) == 0 {
+		panic(fmt.Sprintf("method for pattern \"%s\" are not defined!", pattern))
+	}
+
+	route.handler = handler
+	if route.handler == nil {
+		panic(fmt.Sprintf("handler for pattern \"%s\" is not defined!", pattern))
+	}
+}
+
+//findRoute returns pointer to route based on path supplied
+func (r *HttpRouter) findRoute(path string) *route {
+	path = processPath(path)
+
+	if router, exist := r.staticRoutes[path]; exist {
 		return router
 	}
 
-	pd := &PathDetails{
+	pd := &pathDetails{
 		count:    0,
 		segments: [50]string{},
 	}
 
 	//Splitting the supplied path into its segments
-	for i := len(s) - 1; i >= 0; i-- {
+	for i := len(path) - 1; i >= 0; i-- {
 		//If the character is not "/", continue to the next character
-		if s[i] != 47 {
+		if path[i] != 47 {
 			continue
 		}
 
-		pd.segments[pd.count] = s[i:]
+		pd.segments[pd.count] = path[i:]
 
-		s = s[:i]
+		path = path[:i]
 		pd.count++
 	}
 
 	for i := 0; i < len(r.variableRoutes); i++ {
-		if !r.variableRoutes[i].Compare(pd) {
+		if !r.variableRoutes[i].compare(pd) {
 			continue
 		}
 
@@ -93,46 +130,67 @@ func (r *HttpRouter) findRoute(s string) *Route {
 	return nil
 }
 
-func (r *HttpRouter) addRoute(s string) error {
-	route, err := NewRoute(s)
+//addRoute parses pattern supplied and adds it to the HttpRouter
+func (r *HttpRouter) addRoute(pattern string) (*route, error) {
+	route, err := newRoute(pattern)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if !route.hasVariables {
-		r.staticRoutes[route.original] = route
-		return nil
+		r.staticRoutes[route.originalPattern] = route
+		return route, nil
 	}
 
 	r.variableRoutes = append(r.variableRoutes, route)
-
-	return nil
+	return route, nil
 }
 
+//ServerHTTP serves the requests
 func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("asda"))
-	fmt.Println(req.URL)
-	fmt.Println(req.URL.Path)
-	fmt.Println(req.URL.RawQuery)
-	fmt.Println(req.URL.Query())
-	fmt.Println(req.URL.RequestURI())
-	fmt.Println(req.URL.String())
+	//Looking for route withing the defined handlers
+	route := r.findRoute(req.URL.Path)
+
+	//This is where custom 404 handler can be established
+	if route == nil {
+		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req)
+		return
+	}
+
+	//Checks whether the method of the request is allowed for this handler
+	allowedMethod := false
+	for i := 0; i < len(route.methods); i++ {
+		if string(route.methods[i]) != req.Method {
+			continue
+		}
+
+		allowedMethod = true
+
+		break
+	}
+
+	if !allowedMethod {
+		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req)
+		return
+	}
+
+	route.handler(w, req)
 }
 
 //===========[FUNCTIONALITY]====================================================================================================
 
-func NewSegment(segment string) Segment {
-	//TODO fix segment being "". It would cause problems below getting the index 0 of the string
-
-	return Segment{
-		value:      segment,
-		isVariable: segment[1] == 58,
+//newSegment returns a new segment based on the string supplied
+func newSegment(seg string) segment {
+	return segment{
+		value:      seg,
+		isVariable: seg[1] == 58,
 		ok:         true,
 	}
 }
 
-func SplitPath(path string) []Segment {
-	var buffer []Segment
+//splitPath splits path and returns a slice of its segments
+func splitPath(path string) []segment {
+	var buffer []segment
 	var j int
 
 	for i := len(path) - 1; i >= 0; i-- {
@@ -140,7 +198,7 @@ func SplitPath(path string) []Segment {
 			continue
 		}
 
-		buffer = append(buffer, NewSegment(path[i:]))
+		buffer = append(buffer, newSegment(path[i:]))
 		path = path[:i]
 		i = len(path)
 
@@ -167,12 +225,13 @@ func processPath(s string) string {
 	return s
 }
 
-func NewRoute(s string) (*Route, error) {
-	s = processPath(s)
+//newRoute returns pointer to a new route created from path supplied
+func newRoute(path string) (*route, error) {
+	path = processPath(path)
 
-	r := Route{
-		original: s,
-		segments: SplitPath(s),
+	r := route{
+		originalPattern: path,
+		segments:        splitPath(path),
 	}
 
 	for _, segment := range r.segments {
@@ -187,9 +246,11 @@ func NewRoute(s string) (*Route, error) {
 	return &r, nil
 }
 
+//NewRouter crates a new instance of HttpRouter and returns pointer to it
 func NewRouter() *HttpRouter {
 	return &HttpRouter{
-		staticRoutes:   map[string]*Route{},
-		variableRoutes: []*Route{},
+		staticRoutes:           map[string]*route{},
+		variableRoutes:         []*route{},
+		httpStatusCodeHandlers: newCustomHttpCodeHandlers(),
 	}
 }

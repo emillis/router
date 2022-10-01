@@ -1,4 +1,4 @@
-package router
+package veryFastRouter
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ func BenchmarkSplitPath(b *testing.B) {
 	path := "/one/:two/three/four"
 
 	for n := 0; n < b.N; n++ {
-		SplitPath(path)
+		splitPath(path)
 	}
 }
 
@@ -19,7 +19,7 @@ func BenchmarkNewRoute(b *testing.B) {
 	path := "/one/two/three/four/"
 
 	for n := 0; n < b.N; n++ {
-		NewRoute(path)
+		newRoute(path)
 	}
 }
 
@@ -31,7 +31,7 @@ func BenchmarkSplitType1(b *testing.B) {
 	//
 	//log.Fatal(http.ListenAndServe(":80", x))
 
-	var segments [4]Segment
+	var segments [4]segment
 
 	for n := 0; n < b.N; n++ {
 		//startPos := 0
@@ -42,12 +42,12 @@ func BenchmarkSplitType1(b *testing.B) {
 				continue
 			}
 
-			segments[j] = Segment{
+			segments[j] = segment{
 				value:      path[:i],
 				isVariable: path[:i][1] == 58,
 				ok:         true,
 			}
-			//segments[j] = NewSegment(path[:i])
+			//segments[j] = newSegment(path[:i])
 			path = path[i:]
 			i = 0
 
@@ -64,7 +64,7 @@ func BenchmarkSplitType2(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		path := "/one/:two/three/four"
-		var segments [bufferSize]Segment
+		var segments [bufferSize]segment
 
 		j := 0
 
@@ -73,7 +73,7 @@ func BenchmarkSplitType2(b *testing.B) {
 				continue
 			}
 
-			segments[j] = NewSegment(path[i:])
+			segments[j] = newSegment(path[i:])
 			path = path[:i]
 			i = len(path)
 
@@ -118,7 +118,7 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 		"/one/two/three/four/five/",
 	}
 	for _, r := range routesToAdd {
-		err := router.addRoute(r)
+		_, err := router.addRoute(r)
 		if err != nil {
 			panic(err)
 		}
