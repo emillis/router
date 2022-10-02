@@ -26,6 +26,9 @@ type HttpRouter struct {
 
 	//httpStatusCodeHandlers hold all the default/custom handlers to various http status codes
 	httpStatusCodeHandlers httpStatusCodeHandlers
+
+	//An empty AdditionalInfo element. Do not use this for storing actual variables
+	defaultAdditionalInfo *AdditionalInfo
 }
 
 //findRoute returns pointer to route based on path supplied as well as a slice of variables
@@ -124,20 +127,23 @@ func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler Handle
 func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	//Looking for route withing the defined handlers
 	route, variables := r.findRoute(req.URL.Path)
-	ai := newAdditionalInfo()
 
-	ai.Variables.data = variables
+	info := r.defaultAdditionalInfo
+	if variables != nil {
+		info = newAdditionalInfo()
+		info.Variables.data = variables
+	}
 
 	//This is where custom 404 handler can be established
 	if route == nil {
-		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req, ai)
+		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req, info)
 		return
 	}
 
 	//Checks whether the method of the request is allowed for this handler
 	allowedMethod := false
 	for i := 0; i < len(route.methods); i++ {
-		if string(route.methods[i]) != req.Method {
+		if route.methods[i] != req.Method {
 			continue
 		}
 
@@ -147,11 +153,11 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if !allowedMethod {
-		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req, ai)
+		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req, info)
 		return
 	}
 
-	route.handler(w, req, ai)
+	route.handler(w, req, info)
 }
 
 //===========[FUNCTIONALITY]====================================================================================================
@@ -220,5 +226,6 @@ func NewRouter() *HttpRouter {
 		staticRoutes:           map[string]*route{},
 		variableRoutes:         []*route{},
 		httpStatusCodeHandlers: newCustomHttpCodeHandlers(),
+		defaultAdditionalInfo:  newAdditionalInfo(),
 	}
 }
