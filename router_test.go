@@ -33,7 +33,7 @@ func BenchmarkSplitPath(b *testing.B) {
 	path := "/one/:two/three/four"
 
 	for n := 0; n < b.N; n++ {
-		splitPath(path)
+		splitIntoSegments(path)
 	}
 }
 

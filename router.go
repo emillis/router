@@ -134,7 +134,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		info.Variables.data = variables
 	}
 
-	//This is where custom 404 handler can be established
+	//404 Not Found
 	if route == nil {
 		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req, info)
 		return
@@ -152,6 +152,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		break
 	}
 
+	//405 Method Not Allowed
 	if !allowedMethod {
 		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req, info)
 		return
@@ -162,50 +163,13 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 //===========[FUNCTIONALITY]====================================================================================================
 
-//splitPath splits path and returns a slice of its values
-func splitPath(path string) []segment {
-	var buffer []segment
-	var j int
-
-	for i := len(path) - 1; i >= 0; i-- {
-		if path[i] != 47 {
-			continue
-		}
-
-		buffer = append(buffer, newSegment(path[i:]))
-		path = path[:i]
-		i = len(path)
-
-		j++
-	}
-
-	return buffer
-}
-
-//processPath check for critical errors within the path supplied. Also, removes trailing "/" sign if present
-func processPath(s string) string {
-	//if s == "" {
-	//	return s, errors.New("path supplied cannot be an empty string")
-	//}
-
-	//if s[0] != 47 {
-	//	return s, errors.New("path must begin with \"/\"")
-	//}
-
-	if s[len(s)-1] == 47 && len(s) > 1 {
-		return s[:len(s)-1]
-	}
-
-	return s
-}
-
 //newRoute returns pointer to a new route created from path supplied
 func newRoute(path string) (*route, error) {
 	path = processPath(path)
 
 	r := route{
 		originalPattern: path,
-		segments:        splitPath(path),
+		segments:        splitIntoSegments(path),
 	}
 
 	for _, segment := range r.segments {
