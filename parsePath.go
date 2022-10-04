@@ -30,19 +30,17 @@ func fullPathCheck(path string) (string, error) {
 		return path, errors.New("path supplied cannot be an empty string")
 	}
 
+	if path[0] != 47 {
+		return path, errors.New("path must begin with \"/\"")
+	}
+
+	path = removeTrailingSlash(path)
+
 	return path, nil
 }
 
-//processPath check for critical errors within the path supplied. Also, removes trailing "/" sign if present
-func processPath(s string) string {
-	//if s == "" {
-	//	return s, errors.New("path supplied cannot be an empty string")
-	//}
-
-	//if s[0] != 47 {
-	//	return s, errors.New("path must begin with \"/\"")
-	//}
-
+//removeTrailingSlash check for critical errors within the path supplied. Also, removes trailing "/" sign if present
+func removeTrailingSlash(s string) string {
 	if s[len(s)-1] == 47 && len(s) > 1 {
 		return s[:len(s)-1]
 	}

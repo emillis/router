@@ -108,7 +108,7 @@ func BenchmarkProcessPath(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 
-		processPath(path)
+		removeTrailingSlash(path)
 
 	}
 }

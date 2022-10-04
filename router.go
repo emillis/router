@@ -3,6 +3,7 @@ package veryFastRouter
 import (
 	"fmt"
 	"net/http"
+	"sync"
 )
 
 //===========[CACHE/STATIC]====================================================================================================
@@ -29,11 +30,14 @@ type HttpRouter struct {
 
 	//An empty AdditionalInfo element. Do not use this for storing actual variables
 	defaultAdditionalInfo *AdditionalInfo
+
+	//Mutex used only to add new patterns synchronously
+	mx sync.RWMutex
 }
 
 //findRoute returns pointer to route based on path supplied as well as a slice of variables
 func (r *HttpRouter) findRoute(path string) (*route, []string) {
-	path = processPath(path)
+	path = removeTrailingSlash(path)
 
 	//Looking in static routes first, if there's no match, looks in the routes with variables
 	if router, exist := r.staticRoutes[path]; exist {
@@ -82,6 +86,12 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 	return route, nil
 }
 
+//checkForPathIncongruences checks whether there are no conflicting paths being added
+func (r *HttpRouter) checkForPathIncongruences(path string) error {
+
+	return nil
+}
+
 //HttpStatusCodeHandler allows you to set up custom handlers for various http status codes, e.g. 404, 405...
 func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) {
 	//At first, checking whether the status code exist in the httpStatusCodeHandlers,
@@ -107,6 +117,9 @@ func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) 
 //or a custom 405 handler will be invoked. For the handler to response to all methods, you
 //should use in AllMethods that's defined in this module
 func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler HandlerFunc) {
+	r.mx.Lock()
+	defer r.mx.Unlock()
+
 	route, err := r.addRoute(pattern)
 	if err != nil {
 		panic(err)
@@ -165,7 +178,10 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 //newRoute returns pointer to a new route created from path supplied
 func newRoute(path string) (*route, error) {
-	path = processPath(path)
+	path, err := fullPathCheck(path)
+	if err != nil {
+		return nil, err
+	}
 
 	r := route{
 		originalPattern: path,
@@ -191,5 +207,6 @@ func NewRouter() *HttpRouter {
 		variableRoutes:         []*route{},
 		httpStatusCodeHandlers: newCustomHttpCodeHandlers(),
 		defaultAdditionalInfo:  newAdditionalInfo(),
+		mx:                     sync.RWMutex{},
 	}
 }

@@ -22,7 +22,7 @@ func main() {
 		fmt.Println("TEST!")
 	})
 
-	router.HandleFunc("", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
+	router.HandleFunc("/", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
 		fmt.Println(info)
 		w.Write([]byte("Hello, this is coming from /one"))
 	})
