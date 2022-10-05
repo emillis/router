@@ -42,3 +42,54 @@ func (r *route) compare(path []string) (bool, []string) {
 	//If it was path match, return true and an array of variables
 	return true, variables
 }
+
+//compareRoutes compares two routes and returns boolean based on weather the two are the same
+func (r *route) compareRoutes(r2 *route) bool {
+	if r.originalPattern == r2.originalPattern {
+		return true
+	}
+
+	if len(r.segments) != len(r2.segments) {
+		return false
+	}
+
+	for i := 0; i < len(r.segments); i++ {
+		if r.segments[i].original == r2.segments[i].original {
+			continue
+		}
+
+		if r.segments[i].isVariable && r2.segments[i].isVariable {
+			continue
+		}
+
+		return false
+	}
+
+	return true
+}
+
+//===========[FUNCTIONALITY]====================================================================================================
+
+//newRoute returns pointer to a new route created from path supplied
+func newRoute(path string) (*route, error) {
+	path, err := fullPathCheck(path)
+	if err != nil {
+		return nil, err
+	}
+
+	r := route{
+		originalPattern: path,
+		segments:        splitIntoSegments(path),
+	}
+
+	for _, segment := range r.segments {
+		if !segment.isVariable {
+			continue
+		}
+
+		r.hasVariables = true
+		r.variablesCount++
+	}
+
+	return &r, nil
+}

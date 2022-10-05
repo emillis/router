@@ -1,6 +1,7 @@
 package veryFastRouter
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -77,6 +78,10 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 		return nil, err
 	}
 
+	if err = r.checkForPathIncongruences(route); err != nil {
+		return nil, err
+	}
+
 	if !route.hasVariables {
 		r.staticRoutes[route.originalPattern] = route
 		return route, nil
@@ -87,7 +92,24 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 }
 
 //checkForPathIncongruences checks whether there are no conflicting paths being added
-func (r *HttpRouter) checkForPathIncongruences(path string) error {
+func (r *HttpRouter) checkForPathIncongruences(rt1 *route) error {
+	errDesc := "pattern \"%s\" is already being used!"
+
+	for _, rt2 := range r.staticRoutes {
+		if !rt2.compareRoutes(rt1) {
+			continue
+		}
+
+		return errors.New(fmt.Sprintf(errDesc, rt1.originalPattern))
+	}
+
+	for _, rt2 := range r.variableRoutes {
+		if !rt2.compareRoutes(rt1) {
+			continue
+		}
+
+		return errors.New(fmt.Sprintf(errDesc, rt1.originalPattern))
+	}
 
 	return nil
 }
@@ -175,30 +197,6 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 //===========[FUNCTIONALITY]====================================================================================================
-
-//newRoute returns pointer to a new route created from path supplied
-func newRoute(path string) (*route, error) {
-	path, err := fullPathCheck(path)
-	if err != nil {
-		return nil, err
-	}
-
-	r := route{
-		originalPattern: path,
-		segments:        splitIntoSegments(path),
-	}
-
-	for _, segment := range r.segments {
-		if !segment.isVariable {
-			continue
-		}
-
-		r.hasVariables = true
-		r.variablesCount++
-	}
-
-	return &r, nil
-}
 
 //NewRouter crates a new instance of HttpRouter and returns pointer to it
 func NewRouter() *HttpRouter {
