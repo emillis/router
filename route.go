@@ -1,5 +1,7 @@
 package veryFastRouter
 
+import "fmt"
+
 //===========[STRUCTS]====================================================================================================
 
 //route contains all the needed information to handle a single url path
@@ -7,6 +9,7 @@ type route struct {
 	originalPattern string
 	segments        []segment
 	hasVariables    bool
+	hasMatchAll     bool
 	variablesCount  int
 	methods         []string
 	handler         HandlerFunc
@@ -82,14 +85,19 @@ func newRoute(path string) (*route, error) {
 		segments:        splitIntoSegments(path),
 	}
 
+	fmt.Println("================================")
 	for _, segment := range r.segments {
-		if !segment.isVariable {
-			continue
+		fmt.Println(segment)
+		if segment.isVariable {
+			r.hasVariables = true
+			r.variablesCount++
 		}
 
-		r.hasVariables = true
-		r.variablesCount++
+		if segment.isMatchAll {
+			r.hasMatchAll = true
+		}
 	}
+	fmt.Println("================================")
 
 	return &r, nil
 }
