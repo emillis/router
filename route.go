@@ -1,6 +1,9 @@
 package veryFastRouter
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 //===========[STRUCTS]====================================================================================================
 
@@ -85,8 +88,8 @@ func newRoute(path string) (*route, error) {
 		segments:        splitIntoSegments(path),
 	}
 
-	fmt.Println("================================")
-	for _, segment := range r.segments {
+	fmt.Println(r.segments)
+	for i, segment := range r.segments {
 		fmt.Println(segment)
 		if segment.isVariable {
 			r.hasVariables = true
@@ -94,10 +97,13 @@ func newRoute(path string) (*route, error) {
 		}
 
 		if segment.isMatchAll {
+			if i != 0 {
+				return nil, errors.New("\"Match All\" segment of the pattern can only be at the end of the pattern")
+			}
+
 			r.hasMatchAll = true
 		}
 	}
-	fmt.Println("================================")
 
 	return &r, nil
 }

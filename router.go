@@ -139,6 +139,7 @@ func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) 
 //or a custom 405 handler will be invoked. For the handler to response to all methods, you
 //should use in AllMethods that's defined in this module
 func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler HandlerFunc) {
+	//fmt.Println("Adding", pattern)
 	r.mx.Lock()
 	defer r.mx.Unlock()
 
