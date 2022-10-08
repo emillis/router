@@ -90,7 +90,6 @@ func newRoute(path string) (*route, error) {
 
 	fmt.Println(r.segments)
 	for i, segment := range r.segments {
-		fmt.Println(segment)
 		if segment.isVariable {
 			r.hasVariables = true
 			r.variablesCount++
@@ -98,7 +97,7 @@ func newRoute(path string) (*route, error) {
 
 		if segment.isMatchAll {
 			if i != 0 {
-				return nil, errors.New("\"Match All\" segment of the pattern can only be at the end of the pattern")
+				return nil, errors.New(fmt.Sprintf("\"Match All\" segment of the pattern can only be at the end of the pattern. Detected in segment %d out of %d of pattern \"%s\"", len(r.segments)-i, len(r.segments), r.originalPattern))
 			}
 
 			r.hasMatchAll = true

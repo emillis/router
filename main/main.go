@@ -18,12 +18,11 @@ func main() {
 		w.Write([]byte("I don't know what are you trying to do here, but this method is not allowed!!!"))
 	})
 
-	router.HandleFunc("/test.txt", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
+	router.HandleFunc("/index/help", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
 		fmt.Println("TEST!")
 	})
 
 	router.HandleFunc("/one/any/three", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		fmt.Println(info)
 		w.Write([]byte("Hello, this is coming from /one"))
 	})
 
