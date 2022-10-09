@@ -3,6 +3,7 @@ package veryFastRouter
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 //===========[STRUCTS]====================================================================================================
@@ -20,7 +21,7 @@ type route struct {
 
 //compare path supplied as *stringArray to the route and returns whether it matches
 func (r *route) compare(path []string) (bool, []string) {
-	if len(path) != len(r.segments) {
+	if len(path) != len(r.segments) && !r.hasMatchAll {
 		return false, nil
 	}
 
@@ -35,14 +36,18 @@ func (r *route) compare(path []string) (bool, []string) {
 
 		//If the segment that doesn't match is also not path variable - this route doesn't match!
 		//However, if this segment doesn't match, but is path variable - add it to the variable array and continue
-		if !r.segments[i].isVariable {
-			return false, nil
+		if r.segments[i].isVariable {
+			//Assigning KEY and VALUE
+			variables = append(variables, r.segments[i].key, path[i][1:])
+			continue
 		}
 
-		//Assigning KEY
-		variables = append(variables, r.segments[i].key)
-		//Assigning VALUE
-		variables = append(variables, path[i][1:])
+		if r.segments[i].isMatchAll {
+			variables = append(variables, r.segments[i].key, strings.Join(path[i:], ""))
+			break
+		}
+
+		return false, nil
 	}
 
 	//If it was path match, return true and an array of variables

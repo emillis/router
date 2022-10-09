@@ -82,12 +82,12 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 		return nil, err
 	}
 
-	if !route.hasVariables {
-		r.staticRoutes[route.originalPattern] = route
+	if route.hasVariables || route.hasMatchAll {
+		r.variableRoutes = append(r.variableRoutes, route)
 		return route, nil
 	}
 
-	r.variableRoutes = append(r.variableRoutes, route)
+	r.staticRoutes[route.originalPattern] = route
 	return route, nil
 }
 
