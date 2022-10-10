@@ -194,6 +194,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	fmt.Println("Serving: ", route.originalPattern)
 	route.handler(w, req, info)
 }
 

@@ -21,13 +21,21 @@ type route struct {
 
 //compare path supplied as *stringArray to the route and returns whether it matches
 func (r *route) compare(path []string) (bool, []string) {
-	if len(path) != len(r.segments) && !r.hasMatchAll {
+	if (len(path) < len(r.segments)) || (len(path) != len(r.segments) && !r.hasMatchAll) {
 		return false, nil
 	}
 
 	variables := make([]string, 0, r.variablesCount*2)
 
-	for i := 0; i < len(path); i++ {
+	fmt.Println("======================")
+	fmt.Println("Incoming path", path)
+	fmt.Println("Registered Route:", r.segments)
+
+	for i := len(r.segments) - 1; i >= 0; i-- {
+		fmt.Println(r.segments[i].original)
+		fmt.Println(i)
+		fmt.Println(len(path))
+		fmt.Println(path[i])
 		//If both values match, perfect! Both segments are the same - continue to check the rest.
 		//Otherwise, proceed to further checks
 		if path[i] == r.segments[i].original {

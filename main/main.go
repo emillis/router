@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/emillis/veryFastRouter"
 	"log"
 	"net/http"
@@ -19,23 +18,23 @@ func main() {
 	})
 
 	router.HandleFunc("/index/help", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		fmt.Println("TEST!")
+		//fmt.Println("TEST!")
 	})
 
 	router.HandleFunc("/one/any/three", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		w.Write([]byte("Hello, this is coming from /one"))
+		//w.Write([]byte("Hello, this is coming from /one"))
 	})
 
 	router.HandleFunc("/one/two/", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		w.Write([]byte("Hello, this is coming from /one/two/"))
+		//w.Write([]byte("Hello, this is coming from /one/two/"))
 	})
 
 	router.HandleFunc("/one/two/three", []string{http.MethodPost, http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		w.Write([]byte("Hello, this is coming from /one/two/three (the static one)"))
+		//w.Write([]byte("Hello, this is coming from /one/two/three (the static one)"))
 	})
 
-	router.HandleFunc("/one/two/:three", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
-		w.Write([]byte("Hello, this is coming from /one/two/:three"))
+	router.HandleFunc("/one/two/*three", []string{http.MethodGet}, func(w http.ResponseWriter, r *http.Request, info *veryFastRouter.AdditionalInfo) {
+		//w.Write([]byte("Hello, this is coming from /one/two/:three"))
 	})
 
 	log.Fatal(http.ListenAndServe(":80", router))
