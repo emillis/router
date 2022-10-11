@@ -27,31 +27,24 @@ func (r *route) compare(path []string) (bool, []string) {
 
 	variables := make([]string, 0, r.variablesCount*2)
 
-	fmt.Println("======================")
-	fmt.Println("Incoming path", path)
-	fmt.Println("Registered Route:", r.segments)
-
-	for i := len(r.segments) - 1; i >= 0; i-- {
-		fmt.Println(r.segments[i].original)
-		fmt.Println(i)
-		fmt.Println(len(path))
-		fmt.Println(path[i])
+	segLen, pathLen := len(r.segments)-1, len(path)-1
+	for ; segLen >= 0; segLen, pathLen = segLen-1, pathLen-1 {
 		//If both values match, perfect! Both segments are the same - continue to check the rest.
 		//Otherwise, proceed to further checks
-		if path[i] == r.segments[i].original {
+		if path[pathLen] == r.segments[segLen].original {
 			continue
 		}
 
 		//If the segment that doesn't match is also not path variable - this route doesn't match!
 		//However, if this segment doesn't match, but is path variable - add it to the variable array and continue
-		if r.segments[i].isVariable {
+		if r.segments[segLen].isVariable {
 			//Assigning KEY and VALUE
-			variables = append(variables, r.segments[i].key, path[i][1:])
+			variables = append(variables, r.segments[segLen].key, path[pathLen][1:])
 			continue
 		}
 
-		if r.segments[i].isMatchAll {
-			variables = append(variables, r.segments[i].key, strings.Join(path[i:], ""))
+		if r.segments[segLen].isMatchAll {
+			variables = append(variables, r.segments[segLen].key, strings.Join(path[pathLen:], ""))
 			break
 		}
 
