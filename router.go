@@ -9,10 +9,6 @@ import (
 
 //===========[CACHE/STATIC]====================================================================================================
 
-//bufferSize is the maximum number of values that the route can consist of. Increasing this doesn't appear
-//to affect performance of the application, only it's memory footprint.
-const bufferSize = 10
-
 //HandlerFunc defines how a request handler should look like
 type HandlerFunc func(http.ResponseWriter, *http.Request, *AdditionalInfo)
 
@@ -20,6 +16,10 @@ type HandlerFunc func(http.ResponseWriter, *http.Request, *AdditionalInfo)
 
 //HttpRouter implements Handler interface
 type HttpRouter struct {
+	//bufferSize is the maximum number of values that the route can consist of. Increasing this doesn't appear
+	//to affect performance of the application, only it's memory footprint.
+	bufferSize int
+
 	//staticRoutes store all the routes that do not have variables in them
 	staticRoutes map[string]*route
 
@@ -45,7 +45,7 @@ func (r *HttpRouter) findRoute(path string) (*route, []string) {
 		return router, nil
 	}
 
-	a := make([]string, 0, bufferSize)
+	a := make([]string, 0, r.bufferSize)
 
 	//Splitting the supplied path into its values
 	for i := len(path) - 1; i >= 0; i-- {
@@ -139,7 +139,6 @@ func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) 
 //or a custom 405 handler will be invoked. For the handler to response to all methods, you
 //should use in AllMethods that's defined in this module
 func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler HandlerFunc) {
-	//fmt.Println("Adding", pattern)
 	r.mx.Lock()
 	defer r.mx.Unlock()
 

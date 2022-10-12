@@ -94,7 +94,6 @@ func newRoute(path string) (*route, error) {
 		segments:        splitIntoSegments(path),
 	}
 
-	fmt.Println(r.segments)
 	for i, segment := range r.segments {
 		if segment.isVariable {
 			r.hasVariables = true

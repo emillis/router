@@ -83,7 +83,7 @@ func BenchmarkSplitType2(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		path := "/one/:two/three/four"
-		var segments [bufferSize]segment
+		var segments [10]segment
 
 		j := 0
 
