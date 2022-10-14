@@ -56,3 +56,21 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 		router.findRoute(path)
 	}
 }
+
+func TestHttpRouter_HandleFunc(t *testing.T) {
+	r := NewRouter()
+	requiredCountStatic := 1
+	requiredCountVariable := 2
+
+	r.HandleFunc("/one", []string{"GET", "POST"}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+	r.HandleFunc("/one/:two", []string{"GET", "POST"}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+	r.HandleFunc("/one/two/*three", []string{"GET", "POST"}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {})
+
+	if len(r.variableRoutes) != requiredCountVariable {
+		t.Errorf("Number of variable routes should be %d, got %d", requiredCountVariable, len(r.variableRoutes))
+	}
+
+	if len(r.staticRoutes) != requiredCountStatic {
+		t.Errorf("Number of static routes should be %d, got %d", requiredCountStatic, len(r.staticRoutes))
+	}
+}
