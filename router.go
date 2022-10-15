@@ -12,6 +12,16 @@ import (
 //HandlerFunc defines how a request handler should look like
 type HandlerFunc func(http.ResponseWriter, *http.Request, *AdditionalInfo)
 
+//===========[INTERFACES]====================================================================================================
+
+type Authenticator interface {
+	Authenticate(*http.Request) bool
+}
+
+type Authorizer interface {
+	Authorize(*http.Request) bool
+}
+
 //===========[STRUCTS]====================================================================================================
 
 //HttpRouter implements Handler interface
@@ -31,6 +41,12 @@ type HttpRouter struct {
 
 	//An empty AdditionalInfo element. Do not use this for storing actual variables
 	defaultAdditionalInfo *AdditionalInfo
+
+	//Allows the client to add custom authorization method to the router
+	authorizer Authorizer
+
+	//Allows the client to add custom authenticator method in the router
+	authenticator Authenticator
 
 	//Mutex used only to add new patterns synchronously
 	mx sync.RWMutex
@@ -114,6 +130,16 @@ func (r *HttpRouter) checkForPathIncongruences(rt1 *route) error {
 	return nil
 }
 
+//AddAuthorizationMethod adds authorization method to the HttpRouter
+func (r *HttpRouter) AddAuthorizationMethod(a Authorizer) {
+	r.authorizer = a
+}
+
+//AddAuthenticationMethod adds authentication method to the HttpRouter
+func (r *HttpRouter) AddAuthenticationMethod(a Authenticator) {
+	r.authenticator = a
+}
+
 //HttpStatusCodeHandler allows you to set up custom handlers for various http status codes, e.g. 404, 405...
 func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) {
 	//At first, checking whether the status code exist in the httpStatusCodeHandlers,
@@ -160,6 +186,18 @@ func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler Handle
 
 //ServerHTTP serves the requests
 func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	//Checks whether the request maker is authenticated
+	if r.authenticator != nil && !r.authenticator.Authenticate(req) {
+		r.httpStatusCodeHandlers.handlers[http.StatusUnauthorized](w, req, nil)
+		return
+	}
+
+	//Checks whether incoming request is authorized to access the route
+	if r.authorizer != nil && !r.authorizer.Authorize(req) {
+		r.httpStatusCodeHandlers.handlers[http.StatusForbidden](w, req, nil)
+		return
+	}
+
 	//Looking for route withing the defined handlers
 	route, variables := r.findRoute(req.URL.Path)
 
@@ -171,7 +209,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//404 Not Found
 	if route == nil {
-		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req, info)
+		r.httpStatusCodeHandlers.handlers[http.StatusNotFound](w, req, nil)
 		return
 	}
 
@@ -189,7 +227,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	//405 Method Not Allowed
 	if !allowedMethod {
-		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req, info)
+		r.httpStatusCodeHandlers.handlers[http.StatusMethodNotAllowed](w, req, nil)
 		return
 	}
 
