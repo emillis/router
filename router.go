@@ -14,10 +14,12 @@ type HandlerFunc func(http.ResponseWriter, *http.Request, *AdditionalInfo)
 
 //===========[INTERFACES]====================================================================================================
 
+//Authenticator is used to authenticate the request sender's identity
 type Authenticator interface {
 	Authenticate(*http.Request) bool
 }
 
+//Authorizer checks whether the incoming request is authorized to access the route
 type Authorizer interface {
 	Authorize(*http.Request) bool
 }
@@ -33,7 +35,7 @@ type HttpRouter struct {
 	//staticRoutes store all the routes that do not have variables in them
 	staticRoutes map[string]*route
 
-	//variableRoutes store all the routes that contain variables in them
+	//variableRoutes store all the routes that contain variables or "Match All" pattern in them
 	variableRoutes []*route
 
 	//httpStatusCodeHandlers hold all the default/custom handlers to various http status codes
@@ -160,10 +162,8 @@ func (r *HttpRouter) HttpStatusCodeHandler(statusCode int, handler HandlerFunc) 
 	}
 }
 
-//HandleFunc adds a new http request handler for the pattern defined. You can also define
-//methods to which this handler is going to respond to. If nil is passed as methods, a default
-//or a custom 405 handler will be invoked. For the handler to response to all methods, you
-//should use in AllMethods that's defined in this module
+//HandleFunc adds a new http request handler for the pattern defined. You also must choose
+//which methods this handler will be responding to.
 func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler HandlerFunc) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
