@@ -57,7 +57,7 @@ func BenchmarkRouter_findRoute(b *testing.B) {
 	}
 }
 
-func TestHttpRouter_HandleFunc(t *testing.T) {
+func TestHttpRouter_AddingHandlers(t *testing.T) {
 	r := NewRouter()
 	requiredCountStatic := 1
 	requiredCountVariable := 2
@@ -72,5 +72,37 @@ func TestHttpRouter_HandleFunc(t *testing.T) {
 
 	if len(r.staticRoutes) != requiredCountStatic {
 		t.Errorf("Number of static routes should be %d, got %d", requiredCountStatic, len(r.staticRoutes))
+	}
+}
+
+func TestHttpRouter_Routing(t *testing.T) {
+	r := NewRouter()
+
+	addHandleFunc := map[string]int{
+		"/*one":              1,
+		"/:one/two/three":    2,
+		"/one/two/":          3,
+		"/one/two/*three":    4,
+		"/:one/:two/:three/": 5,
+	}
+
+	tests := map[string]int{
+		"/hello": 1,
+	}
+
+	res := 0
+
+	for key, val := range addHandleFunc {
+		r.HandleFunc(key, []string{"GET"}, func(w http.ResponseWriter, req *http.Request, info *AdditionalInfo) {
+			res = val
+		})
+	}
+
+	for key, val := range tests {
+		r.ServeHTTP(nil, &http.Request{URL: &url.URL{Path: key}, Method: "GET"})
+
+		if res != val {
+			t.Errorf("Expected result %d, got %d", val, res)
+		}
 	}
 }
