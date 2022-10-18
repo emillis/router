@@ -38,6 +38,9 @@ type HttpRouter struct {
 	//variableRoutes store all the routes that contain variables or "Match All" pattern in them
 	variableRoutes []*route
 
+	//matchAllRoutes store only the routes that have "Match All" pattern
+	matchAllRoutes []*route
+
 	//httpStatusCodeHandlers hold all the default/custom handlers to various http status codes
 	httpStatusCodeHandlers httpStatusCodeHandlers
 
@@ -76,6 +79,7 @@ func (r *HttpRouter) findRoute(path string) (*route, []string) {
 		path = path[:i]
 	}
 
+	//Matching variable routes
 	for i := 0; i < len(r.variableRoutes); i++ {
 		matched, variables := r.variableRoutes[i].compare(a)
 
@@ -84,6 +88,17 @@ func (r *HttpRouter) findRoute(path string) (*route, []string) {
 		}
 
 		return r.variableRoutes[i], variables
+	}
+
+	//Matching "Match All" routes
+	for i := 0; i < len(r.matchAllRoutes); i++ {
+		matched, variables := r.matchAllRoutes[i].compare(a)
+
+		if !matched {
+			continue
+		}
+
+		return r.matchAllRoutes[i], variables
 	}
 
 	return nil, nil
@@ -100,8 +115,13 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 		return nil, err
 	}
 
-	if route.hasVariables || route.hasMatchAll {
+	if route.hasVariables {
 		r.variableRoutes = append(r.variableRoutes, route)
+		return route, nil
+	}
+
+	if route.hasMatchAll {
+		r.matchAllRoutes = append(r.matchAllRoutes, route)
 		return route, nil
 	}
 

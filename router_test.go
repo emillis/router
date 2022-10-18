@@ -1,9 +1,11 @@
 package veryFastRouter
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func BenchmarkHttpRouter_ServeHTTP(b *testing.B) {
@@ -87,19 +89,51 @@ func TestHttpRouter_Routing(t *testing.T) {
 	}
 
 	tests := map[string]int{
-		"/hello": 1,
+		"/hello":                        1,
+		"/one/two":                      3,
+		"/one/none/":                    1,
+		"/one/two/three/four/five/six/": 4,
+		"/test1/test2/test3":            5,
 	}
 
 	res := 0
 
-	for key, val := range addHandleFunc {
-		r.HandleFunc(key, []string{"GET"}, func(w http.ResponseWriter, req *http.Request, info *AdditionalInfo) {
+	newHandleFunc := func(router *HttpRouter, pattern string, val int) {
+		router.HandleFunc(pattern, []string{"GET"}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {
 			res = val
+			fmt.Printf("%s: %d, %p\n", pattern, val, &val)
 		})
 	}
 
-	for key, val := range tests {
-		r.ServeHTTP(nil, &http.Request{URL: &url.URL{Path: key}, Method: "GET"})
+	initiateHandleFunc := func(router *HttpRouter, pattern string) {
+		route, _ := router.findRoute(pattern)
+		res = -1
+		if route != nil {
+			route.handler(nil, nil, nil)
+		}
+	}
+
+	for key, val := range addHandleFunc {
+		newHandleFunc(r, key, val)
+	}
+
+	fmt.Println("==================================")
+	for _, x := range r.staticRoutes {
+		x.handler(nil, nil, nil)
+	}
+	for _, x := range r.variableRoutes {
+		x.handler(nil, nil, nil)
+	}
+	for _, x := range r.matchAllRoutes {
+		x.handler(nil, nil, nil)
+	}
+	fmt.Println("==================================")
+
+	time.Sleep(time.Millisecond * 500)
+
+	for pattern, val := range tests {
+		fmt.Printf("Pattern supplied: %s | ", pattern)
+		initiateHandleFunc(r, pattern)
 
 		if res != val {
 			t.Errorf("Expected result %d, got %d", val, res)
