@@ -56,28 +56,56 @@ func (r *route) compare(path []string) (bool, []string) {
 }
 
 //compareRoutes compares two routes and returns boolean based on weather the two are the same
-func (r *route) compareRoutes(r2 *route) bool {
+func (r *route) compareRoutes(r2 *route) error {
+	//Matching static patterns
 	if r.originalPattern == r2.originalPattern {
-		return true
+		return errors.New(fmt.Sprintf("pattern \"%s\" has already been added to the HttpRouter", r2.originalPattern))
 	}
 
-	if len(r.segments) != len(r2.segments) {
-		return false
-	}
+	//Matching patterns with variables
+	if r.hasVariables && r2.hasVariables && len(r.segments) == len(r2.segments) {
+		for i, s1 := range r.segments {
+			s2 := r2.segments[i]
 
-	for i := 0; i < len(r.segments); i++ {
-		if r.segments[i].original == r2.segments[i].original {
-			continue
+			if s1.isVariable && s2.isVariable {
+				continue
+			}
+
+			if s1.original == s2.original {
+				continue
+			}
+
+			return nil
 		}
 
-		if r.segments[i].isVariable && r2.segments[i].isVariable {
-			continue
-		}
-
-		return false
+		return errors.New(fmt.Sprintf("variable pattern \"%s\" conflicts with existing pattern \"%s\" in HttpRouter", r2.originalPattern, r.originalPattern))
 	}
 
-	return true
+	//Matching "Match All" patterns
+	if r.hasMatchAll && r2.hasMatchAll {
+		length := len(r.segments)
+		if len(r2.segments) > length {
+			length = len(r2.segments)
+		}
+
+		//Looping in reverse
+		for i, j := len(r.segments)-1, len(r2.segments)-1; i >= 0 && j >= 0; i, j = i-1, j-1 {
+			s1 := r.segments[i]
+			s2 := r2.segments[j]
+
+			if !s1.isMatchAll && !s2.isMatchAll && s1.original != s2.original {
+				return nil
+			}
+
+			if s1.isMatchAll || s2.isMatchAll {
+				return errors.New(fmt.Sprintf("conflicting \"Match All\" pattern detected between existing pattern \"%s\" and one being added \"%s\" (both patterns would match the same url path)", r.originalPattern, r2.originalPattern))
+			}
+		}
+
+		return nil
+	}
+
+	return nil
 }
 
 //===========[FUNCTIONALITY]====================================================================================================

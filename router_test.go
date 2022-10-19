@@ -1,11 +1,9 @@
 package veryFastRouter
 
 import (
-	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
-	"time"
 )
 
 func BenchmarkHttpRouter_ServeHTTP(b *testing.B) {
@@ -81,19 +79,20 @@ func TestHttpRouter_Routing(t *testing.T) {
 	r := NewRouter()
 
 	addHandleFunc := map[string]int{
-		"/*one":              1,
+		"/two/*three":        1,
 		"/:one/two/three":    2,
 		"/one/two/":          3,
 		"/one/two/*three":    4,
 		"/:one/:two/:three/": 5,
 	}
 
+	//-1 Means pattern not found
 	tests := map[string]int{
-		"/hello":                        1,
 		"/one/two":                      3,
-		"/one/none/":                    1,
 		"/one/two/three/four/five/six/": 4,
 		"/test1/test2/test3":            5,
+		"/hello":                        -1,
+		"/one/none/":                    -1,
 	}
 
 	res := 0
@@ -101,39 +100,32 @@ func TestHttpRouter_Routing(t *testing.T) {
 	newHandleFunc := func(router *HttpRouter, pattern string, val int) {
 		router.HandleFunc(pattern, []string{"GET"}, func(w http.ResponseWriter, r *http.Request, info *AdditionalInfo) {
 			res = val
-			fmt.Printf("%s: %d, %p\n", pattern, val, &val)
 		})
-	}
-
-	initiateHandleFunc := func(router *HttpRouter, pattern string) {
-		route, _ := router.findRoute(pattern)
-		res = -1
-		if route != nil {
-			route.handler(nil, nil, nil)
-		}
 	}
 
 	for key, val := range addHandleFunc {
 		newHandleFunc(r, key, val)
 	}
 
-	fmt.Println("==================================")
-	for _, x := range r.staticRoutes {
-		x.handler(nil, nil, nil)
-	}
-	for _, x := range r.variableRoutes {
-		x.handler(nil, nil, nil)
-	}
-	for _, x := range r.matchAllRoutes {
-		x.handler(nil, nil, nil)
-	}
-	fmt.Println("==================================")
-
-	time.Sleep(time.Millisecond * 500)
+	//fmt.Println("==================================")
+	//for _, x := range r.staticRoutes {
+	//	x.handler(nil, nil, nil)
+	//}
+	//for _, x := range r.variableRoutes {
+	//	x.handler(nil, nil, nil)
+	//}
+	//for _, x := range r.matchAllRoutes {
+	//	x.handler(nil, nil, nil)
+	//}
+	//fmt.Println("==================================")
+	//time.Sleep(time.Millisecond * 500)
 
 	for pattern, val := range tests {
-		fmt.Printf("Pattern supplied: %s | ", pattern)
-		initiateHandleFunc(r, pattern)
+		res = -1
+		route, _ := r.findRoute(pattern)
+		if route != nil {
+			route.handler(nil, nil, nil)
+		}
 
 		if res != val {
 			t.Errorf("Expected result %d, got %d", val, res)

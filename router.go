@@ -1,7 +1,6 @@
 package veryFastRouter
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -130,23 +129,39 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 }
 
 //checkForPathIncongruences checks whether there are no conflicting paths being added
-func (r *HttpRouter) checkForPathIncongruences(rt1 *route) error {
-	errDesc := "pattern \"%s\" is already being used!"
+func (r *HttpRouter) checkForPathIncongruences(r2 *route) error {
 
-	for _, rt2 := range r.staticRoutes {
-		if !rt2.compareRoutes(rt1) {
-			continue
+	if r2.hasVariables {
+		for _, r1 := range r.variableRoutes {
+			err := r1.compareRoutes(r2)
+			if err == nil {
+				continue
+			}
+
+			return err
 		}
-
-		return errors.New(fmt.Sprintf(errDesc, rt1.originalPattern))
+		return nil
 	}
 
-	for _, rt2 := range r.variableRoutes {
-		if !rt2.compareRoutes(rt1) {
+	if r2.hasMatchAll {
+		for _, r1 := range r.matchAllRoutes {
+			err := r1.compareRoutes(r2)
+			if err == nil {
+				continue
+			}
+
+			return err
+		}
+		return nil
+	}
+
+	for _, r1 := range r.staticRoutes {
+		err := r1.compareRoutes(r2)
+		if err != nil {
 			continue
 		}
 
-		return errors.New(fmt.Sprintf(errDesc, rt1.originalPattern))
+		return err
 	}
 
 	return nil
