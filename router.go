@@ -157,7 +157,7 @@ func (r *HttpRouter) checkForPathIncongruences(r2 *route) error {
 
 	for _, r1 := range r.staticRoutes {
 		err := r1.compareRoutes(r2)
-		if err != nil {
+		if err == nil {
 			continue
 		}
 
