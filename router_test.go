@@ -79,19 +79,33 @@ func TestHttpRouter_Routing(t *testing.T) {
 	r := NewRouter()
 
 	addHandleFunc := map[string]int{
-		"/two/*three":        1,
-		"/:one/two/three":    2,
-		"/one/two/":          3,
-		"/one/two/*three":    4,
-		"/:one/:two/:three/": 5,
+		"/one/two/":      3,
+		"/one/two/three": 6,
+		"/one":           11,
+		"/":              7,
+
+		"/one/:two/three/": 5,
+		"/:one":            12,
+
+		"/one/two/*three": 4,
+		"/two/*three":     1,
 	}
 
 	//-1 Means pattern not found
 	tests := map[string]int{
-		"/one/two":                      3,
+		"/one/two":         3,
+		"/":                7,
+		"/one":             11,
+		"/one/two/three/":  6,
+		"/one/one/one/one": -1,
+
+		"/hello":             12,
+		"/nine/nine/nine/":   5,
+		"/sixteen/two/three": 2,
+		"/one/sixteen/three": 8,
+
 		"/one/two/three/four/five/six/": 4,
 		"/test1/test2/test3":            5,
-		"/hello":                        -1,
 		"/one/none/":                    -1,
 	}
 
@@ -107,19 +121,6 @@ func TestHttpRouter_Routing(t *testing.T) {
 		newHandleFunc(r, key, val)
 	}
 
-	//fmt.Println("==================================")
-	//for _, x := range r.staticRoutes {
-	//	x.handler(nil, nil, nil)
-	//}
-	//for _, x := range r.variableRoutes {
-	//	x.handler(nil, nil, nil)
-	//}
-	//for _, x := range r.matchAllRoutes {
-	//	x.handler(nil, nil, nil)
-	//}
-	//fmt.Println("==================================")
-	//time.Sleep(time.Millisecond * 500)
-
 	for pattern, val := range tests {
 		res = -1
 		route, _ := r.findRoute(pattern)
@@ -128,7 +129,7 @@ func TestHttpRouter_Routing(t *testing.T) {
 		}
 
 		if res != val {
-			t.Errorf("Expected result %d, got %d", val, res)
+			t.Errorf("Expected result %d, got %d. %s, %s", val, res, route.originalPattern, pattern)
 		}
 	}
 }
