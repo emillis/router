@@ -67,7 +67,7 @@ func (r *route) compareRoutes(r2 *route) error {
 		for i, s1 := range r.segments {
 			s2 := r2.segments[i]
 
-			if s1.isVariable && s2.isVariable {
+			if s1.isVariable || s2.isVariable {
 				continue
 			}
 
