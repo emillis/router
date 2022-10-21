@@ -84,8 +84,12 @@ func TestHttpRouter_Routing(t *testing.T) {
 		"/one":           11,
 		"/":              7,
 
-		"/one/:two/three/": 5,
-		"/:one":            12,
+		"/:one":                  10,
+		"/one/:two/three/":       5,
+		"/two/:three/:four/":     12,
+		"/three/:four/five/:six": 2,
+		"/four/five/:six/":       8,
+		"/five/:six/:seven/":     9,
 
 		"/one/two/*three": 4,
 		"/two/*three":     1,
@@ -99,13 +103,11 @@ func TestHttpRouter_Routing(t *testing.T) {
 		"/one/two/three/":  6,
 		"/one/one/one/one": -1,
 
-		"/hello":             12,
-		"/nine/nine/nine/":   5,
-		"/sixteen/two/three": 2,
-		"/one/sixteen/three": 8,
+		"/hello":             10,
+		"/one/sixteen/three": 5,
+		"/two/nine/nine":     12,
 
 		"/one/two/three/four/five/six/": 4,
-		"/test1/test2/test3":            5,
 		"/one/none/":                    -1,
 	}
 
@@ -124,12 +126,14 @@ func TestHttpRouter_Routing(t *testing.T) {
 	for pattern, val := range tests {
 		res = -1
 		route, _ := r.findRoute(pattern)
+		originalPattern := "Not Found"
 		if route != nil {
 			route.handler(nil, nil, nil)
+			originalPattern = route.originalPattern
 		}
 
 		if res != val {
-			t.Errorf("Expected result %d, got %d. %s, %s", val, res, route.originalPattern, pattern)
+			t.Errorf("Expected result %d, got %d. %s, %s", val, res, originalPattern, pattern)
 		}
 	}
 }
