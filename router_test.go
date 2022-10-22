@@ -103,9 +103,12 @@ func TestHttpRouter_Routing(t *testing.T) {
 		"/one/two/three/":  6,
 		"/one/one/one/one": -1,
 
-		"/hello":             10,
-		"/one/sixteen/three": 5,
-		"/two/nine/nine":     12,
+		"/hello":              10,
+		"/one/sixteen/three":  5,
+		"/two/nine/nine":      12,
+		"/three/xxx/five/xxa": 2,
+		"/four/five/BLA!":     8,
+		"five/six/seven/":     -1,
 
 		"/one/two/three/four/five/six/": 4,
 		"/one/none/":                    -1,
