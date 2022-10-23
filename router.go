@@ -29,6 +29,7 @@ type Authorizer interface {
 type HttpRouter struct {
 	//bufferSize is the maximum number of values that the route can consist of. Increasing this doesn't appear
 	//to affect performance of the application, only it's memory footprint.
+	//Thi is an auto-managed value and should not be set manually.
 	bufferSize int
 
 	//staticRoutes store all the routes that do not have variables in them
@@ -108,6 +109,10 @@ func (r *HttpRouter) addRoute(pattern string) (*route, error) {
 	route, err := newRoute(pattern)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(route.segments) > r.bufferSize {
+		r.bufferSize = len(route.segments)
 	}
 
 	if err = r.checkForPathIncongruences(route); err != nil {
