@@ -15,7 +15,7 @@ var defaultFileServingOptions = FileServingOptions{
 
 //FileCacher defines interface for deciding whether a file should be cached
 type FileCacher interface {
-	ToCache(fs.File) bool
+	ToCache(fs.FileInfo) bool
 }
 
 //===========[STRUCTS]====================================================================================================
