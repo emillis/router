@@ -6,6 +6,7 @@ import "io/fs"
 
 //defaultFileServingOptions define default values that FileServingOptions will come with
 var defaultFileServingOptions = FileServingOptions{
+	FileCaching:         NewFileCaching(),
 	IgnorePatterns:      []string{"_*"},
 	AllowDynamicServing: false,
 	Filter:              nil,
@@ -16,6 +17,7 @@ var defaultFileServingOptions = FileServingOptions{
 //FileCacher defines interface for deciding whether a file should be cached
 type FileCacher interface {
 	ToCache(fs.FileInfo) bool
+	Copy() FileCacher
 }
 
 //===========[STRUCTS]====================================================================================================
@@ -43,6 +45,7 @@ type FileServingOptions struct {
 //Copy will return a perfect copy of FileServingOptions
 func (o *FileServingOptions) Copy() FileServingOptions {
 	newOpt := FileServingOptions{
+		FileCaching:         o.FileCaching.Copy(),
 		IgnorePatterns:      make([]string, 0, len(o.IgnorePatterns)),
 		AllowDynamicServing: o.AllowDynamicServing,
 		Filter:              o.Filter,
