@@ -224,6 +224,13 @@ func (r *HttpRouter) HandleFunc(pattern string, methods []string, handler Handle
 	}
 }
 
+//ServeFileSystem serves files from rootLocation. By default, there's no limit for the depth
+//of the root folder for file serving. Also, by default, files starting with "_" (underscore)
+//will be excluded. For more options, add *FileServingOptions.
+func (r *HttpRouter) ServeFileSystem(rootLoc string, fso *FileServingOptions) {
+
+}
+
 //ServerHTTP serves the requests
 func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	//Checks whether the request maker is authenticated
@@ -279,6 +286,7 @@ func (r *HttpRouter) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 //NewRouter crates a new instance of HttpRouter and returns pointer to it
 func NewRouter() *HttpRouter {
 	return &HttpRouter{
+		bufferSize:             10,
 		staticRoutes:           map[string]*route{},
 		variableRoutes:         []*route{},
 		httpStatusCodeHandlers: newCustomHttpCodeHandlers(),
